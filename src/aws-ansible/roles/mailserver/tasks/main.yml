@@ -1,0 +1,7 @@
+# roles/mailserver/tasks/main.yml
+---
+
+- include_tasks: sendmail.yml
+- include_tasks: postfix.yml
+- include_tasks: dovecot.yml
+- include_tasks: spamassassin.yml

@@ -1,0 +1,5 @@
+---
+# defaults file for mariuszczyz.rainloop
+
+RAINLOOP_VERSION: 1.14.0
+RAINLOOP_WEB_ROOT: /var/www/html/rainloop

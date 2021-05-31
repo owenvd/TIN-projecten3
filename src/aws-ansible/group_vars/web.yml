@@ -1,0 +1,116 @@
+ssl_key: corona2020.key
+ssl_cert: corona2020.crt
+#rhbase
+rhbase_firewall_allow_ports:
+  - 8025/tcp
+rhbase_firewall_allow_services:
+  - http
+  - https
+rhbase_selinux_booleans:
+  - httpd_can_network_connect_db
+  - httpd_can_network_connect
+  - collectd_tcp_network_connect
+  - httpd_execmem
+  # - httpd_sys_rw_content_t
+
+nginx_vhosts:
+  - server_name: "{{drupal_domain}} www.{{drupal_domain}}"
+    root: "{{drupal_core_path}}"
+    is_php: true
+    extra_parameters: |
+       listen 443 ssl;
+       ssl_certificate     /etc/pki/tls/certs/{{ssl_cert}};
+       ssl_certificate_key /etc/pki/tls/certs/{{ssl_key}};
+       ssl_protocols       TLSv1.1 TLSv1.2;
+       ssl_ciphers         HIGH:!aNULL:!MD5;
+  - server_name: "rainloop.{{drupal_domain}}"
+    root: "{{RAINLOOP_WEB_ROOT}}"
+    is_php: true
+    extra_parameters: |
+        location ^~ /data {
+        deny all;
+        }
+nginx_remove_default_vhost: true
+nginx_ppa_use: true
+nginx_vhost_template: "templates/nginx-vhost.conf.j2"
+
+#Composer
+drupal_build_composer_project: true
+drupal_composer_project_package: "drupal/recommended-project:^9@dev"
+drupal_composer_project_options: "--prefer-dist --stability dev --no-interaction"
+
+#Drupal
+drupal_major_version: 9
+drupal_install_site: true
+drupal_core_owner_become: true
+drupal_build_composer_project: true
+drupal_composer_install_dir: "/var/www/html/drupal"
+drupal_core_path: "{{ drupal_composer_install_dir }}/web"
+drupal_domain: "corona2020.local"
+drupal_db_user: drupal
+drupal_db_password: drupal
+drupal_db_name: drupal
+drupal_db_host: localhost
+drupal_db_backend: pgsql
+drupal_site_name: "Corona2020"
+drupal_install_profile: standard
+
+
+
+
+#Databank
+postgresql_users:
+  - name: "{{ drupal_db_user }}"
+    password: "{{ drupal_db_password }}"
+  - name: rainloop
+    password: rainloop
+
+postgresql_databases:
+  - name: "{{ drupal_db_name }}"
+    owner: "{{ drupal_db_user }}"
+  - name: rainloop
+    owner: rainloop
+
+#php
+
+php_install_recommends: no
+php_memory_limit: "192M"
+php_display_errors: "On"
+php_display_startup_errors: "On"
+php_realpath_cache_size: "1024K"
+php_sendmail_path: "/opt/mailhog/mhsendmail"
+php_opcache_enabled_in_ini: true
+php_opcache_memory_consumption: "192"
+php_opcache_max_accelerated_files: 4096
+php_max_input_vars: "4000"
+
+php_pgsql_package: php-pgsql
+php_version: '7.4'
+php_packages_state: "latest"
+php_enablerepo: "remi-php70,epel"
+php_use_managed_ini: true
+php_webserver_daemon: "nginx"
+php_fpm_pool_user: "nginx" # default varies by OS
+php_fpm_pool_group: "nginx" # default varies by OS
+php_enable_php_fpm: true
+php_fpm_listen: "127.0.0.1:9000"
+php_packages:
+  - php
+  - php-cli
+  - php-common
+  - php-devel
+  - php-fpm
+  - php-gd
+  - php-imap
+  - php-ldap
+  - php-mbstring
+  - php-mcrypt
+  - php-opcache
+  - php-pdo
+  - php-pear
+  - php-pecl-apcu
+  - php-xml
+  - php-xmlrpc
+  - php-pecl-yaml
+  - php-mysqli
+

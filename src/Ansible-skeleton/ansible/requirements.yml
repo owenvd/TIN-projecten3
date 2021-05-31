@@ -1,0 +1,19 @@
+# downloads roles met ansible-galaxy install -r requirements.yml
+roles:
+  - name: geerlingguy.java
+  - name: geerlingguy.repo-epel
+  - name: geerlingguy.repo-remi
+  - name: geerlingguy.git 
+  - name: geerlingguy.postfix 
+  - name: geerlingguy.nginx
+  - name: geerlingguy.php-versions
+  - name: geerlingguy.php
+  - name: geerlingguy.php-pecl
+  - name: geerlingguy.composer 
+  - name: geerlingguy.postgresql
+  - name: geerlingguy.php-pgsql
+  - name: geerlingguy.drush
+  - name: geerlingguy.drupal
+  - name: geerlingguy.daemonize
+  - name: geerlingguy.mailhog
+  

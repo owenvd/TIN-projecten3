@@ -1,0 +1,79 @@
+---
+# tasks file for mariuszczyz.rainloop
+
+- name: Check if RainLoop is installed
+  stat:
+    path: "{{ RAINLOOP_WEB_ROOT }}/data/VERSION"
+  register: rainloop_installed
+
+- name: Make sure RainLoop web root directory exists
+  file:
+    path: "{{ RAINLOOP_WEB_ROOT }}"
+    state: directory
+    owner: nginx
+    group: nginx
+
+- name: Download the latest community version of RainLoop
+  get_url:
+    url: https://www.rainloop.net/repository/webmail/rainloop-community-latest.zip
+    dest: /tmp/rainloop-community-latest.zip
+    mode: 0644
+  when: rainloop_installed.stat.exists == False
+
+- name: Make sure the temp directory doesn't exist
+  shell: rm -rf /tmp/rainloop
+  when: rainloop_installed.stat.exists == False
+
+- name: Create empty temp directory
+  file:
+    path: /tmp/rainloop
+    state: directory
+
+- name: Install unzip packages
+  become: yes
+  yum:
+    name: unzip
+    state: present
+
+- name: Unzip RainLoop zip archive
+  unarchive:
+    src: /tmp/rainloop-community-latest.zip
+    dest: /tmp/rainloop
+    remote_src: yes
+  when: rainloop_installed.stat.exists == False
+
+- name: Sync files to Rainloop root directory
+  command: "rsync -a /tmp/rainloop/ {{ RAINLOOP_WEB_ROOT }}/"
+  when: rainloop_installed.stat.exists == False
+
+- name: Fix directory ownership to webserver user
+  file:
+    path: "{{ RAINLOOP_WEB_ROOT }}"
+    owner: nginx
+    group: nginx
+    recurse: yes
+  when: rainloop_installed.stat.exists == False
+
+- name: change SELINUX premisions
+  command: "sudo semanage fcontext -a -t httpd_sys_rw_content_t '{{ RAINLOOP_WEB_ROOT }}/data'"
+  #when: rhbase_selinux_state == 'enforcing' or rhbase_selinux_state == 'permissive'
+  
+- name: restorecon SELINUX premisions
+  command: "sudo restorecon -v '{{ RAINLOOP_WEB_ROOT }}/data'"
+  #when: rhbase_selinux_state == 'enforcing' or rhbase_selinux_state == 'permissive'
+  
+- name: Cleanup
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /tmp/rainloop-community-latest.zip
+    - /tmp/rainloop
+
+#- name: Update SeLinux premisions on drupal
+ # command: "php {{ RAINLOOP_WEB_ROOT }}/index.php"
+
+#- name: copy rainloop ini
+ # copy:
+  #  src: corona2020.local.ini
+   # dest: "{{ RAINLOOP_WEB_ROOT }}/data/_data_/_default_/domains/corona2020.local.ini"

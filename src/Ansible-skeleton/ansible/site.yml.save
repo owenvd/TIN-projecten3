@@ -1,0 +1,146 @@
+# site.yml
+---
+- hosts: all
+  become: true
+  roles:
+    - bertvv.rh-base
+
+- hosts: bravo
+  become: true
+  roles:
+    - bertvv.bind
+- hosts: charlie
+ pre_tasks:
+    - name: Set repo if Alpine
+      set_fact:
+        version: "=1.19.1-r1"
+      when: ansible_facts['os_family'] == "Alpine"
+    - name: Set repo if Debian
+      set_fact:
+        version: "=1.19.1-1~{{ ansible_facts['distribution_release'] }}"
+      when: ansible_facts['os_family'] == "Debian"
+    - name: Set repo if Red Hat
+      set_fact:
+        version: "-1.19.1-1.el{{ ansible_facts['distribution_major_version'] }}.ngx"
+      when: ansible_facts['os_family'] == "RedHat"
+    - name: Enable NGINX @CentOS-AppStream dnf modules
+      shell:
+      args:
+        cmd: dnf module info nginx | grep -q 'Stream.*\[e\]' && echo -n ENABLED || dnf module enable -y nginx  # noqa 204 303
+      register: dnf_module_enable
+      changed_when: dnf_module_enable.stdout != 'ENABLED'
+      when: ansible_facts['os_family'] == "RedHat" and ansible_facts['distribution_major_version'] is version('8', '==')
+  tasks:
+    - name: Install NGINX
+      include_role:
+        name: nginxinc.nginx
+      vars:
+        nginx_debug_output: true
+        nginx_selinux: true
+        nginx_selinux_tcp_ports:
+          - 80
+          - 443
+        nginx_version: "{{ version }}"
+        nginx_configure: false
+        nginx_logrotate_conf_enable: true
+        nginx_logrotate_conf:
+          paths:
+            - /var/log/nginx/*.log
+          options:
+            - daily
+            - missingok
+            - rotate 14
+            - compress
+            - delaycompress
+            - notifempty
+            - sharedscripts
+
+les:
+    - host_vars/charlie.yml
+- hosts: delta
+  tasks:
+    - name: remove sendmail
+      yum:
+        name: sendmail
+        state: removed
+    - name: Install postfix
+      yum:
+        name: postfix
+        state: latest
+    - name: Ensure postfix started
+      service:
+        name: postfix
+        state: started
+        enabled: true
+    - name: Config mainPostfix
+      template:
+        src: postfix_main.cf
+        dest: /etc/postfix/main.cf
+      notify: restart postfix
+    - name: Install Dovecot
+      yum:
+        name: dovecot
+        state: latest
+    - name: Ensure Dovecot started
+      service:
+        name: dovecot
+        state: started
+        enabled: true
+    - name: Config dovecot mail
+      template:
+        src: dovecot_mail.conf
+        dest: /etc/dovecot/conf.d/10-mail.conf
+      notify: restart dovecot
+    - name: Config dovecot users&groups
+      template:
+        src: dovecot_U&G.conf
+        dest: /etc/dovecot/conf.d/10-master.conf
+      notify: restart dovecot
+    - name: Install SpamAssassin
+      yum:
+        name: spamassassin
+        state: latest
+    - name: config spamassassin
+      copy:
+        content: 'report_safe 0 required_score 8.0 rewrite_header Subject [SPAM]'
+        dest: '/etc/mail/spamassassin/local.cf'
+    - name: ensure spamassassin is installed
+      service:
+        name: spamassassin
+        state: started
+        enabled: yes
+    - name: Install ClamAV
+      yum:
+        name:
+          - clamav
+          - clamav-server
+          - clamav-data
+          - clamav-update
+          - clamav-filesystem
+          - clamav-scanner-systemd
+          - clamav-devel
+          - clamav-lib
+          - clamav-server-systemd
+        state: latest
+    - name: Config ClamAV
+      template:
+        src: clam-scan.conf
+        dest: /etc/clamd.d/scan.conf
+    - name: stop ClamAV
+      service:
+        name: clamd@scan.service
+        state: stopped
+    - name: start ClamAV
+      service:
+        name: clamd@scan.service
+        state: started
+        enabled: yes
+  handlers:
+    - name: restart postfix
+      service:
+        name: postfix
+        state: restarted
+    - name: restart dovecot
+      service:
+        name: dovecot
+        state: restarted

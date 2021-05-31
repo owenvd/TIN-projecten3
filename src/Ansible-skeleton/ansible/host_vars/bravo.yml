@@ -1,0 +1,121 @@
+bind_allow_query:
+  - any
+bind_listen_ipv4:
+  - any
+bind_zones:
+  - name: CORONA2020.local
+    primaries:
+      - 192.168.10.195
+    name_servers:
+      - bravo.CORONA2020.local. #bravo. is hier genoeg
+    mail_servers:
+      - name: delta
+        preference: 10
+    allow_update: ['any']
+    hosts:
+      - name: bravo
+        ip: 192.168.10.195
+        ipv6: ::ffff:c0a8:ac3
+        aliases:
+          - ns
+      - name: alfa
+        ip: 192.168.10.194
+        ipv6: ::ffff:c0a8:ac2
+        aliases:
+          - dc
+          - 4a49c7fc-c9e8-4e7f-8055-67b4fcd5e804._msdcs
+      - name: charlie
+        ip: 192.168.10.196
+        ipv6: ::ffff:c0a8:ac4
+        aliases:
+          - www
+          - rainloop
+          - zabbix
+      - name: delta
+        ip: 192.168.10.197
+        ipv6: ::ffff:c0a8:ac5
+        aliases:
+          - mail
+      - name: echo
+        ip: 192.168.10.198
+        ipv6: ::ffff:c0a8:ac6
+        aliases:
+          - sccm
+    networks:
+      - '192.168.10'
+    services:
+      - name: _ldap._tcp
+        weight: 100
+        port: 389
+        target: alfa
+      - name: _ldap._tcp.Default-First-Site-Name._sites
+        weight: 100
+        port: 389
+        target: alfa
+      - name: _ldap._tcp.pdc._msdcs
+        weight: 100
+        port: 389
+        target: alfa
+      - name: _ldap._tcp.Default-First-Site-Name._sites.gc._msdcs
+        weight: 100
+        port: 3268
+        target: alfa
+      - name: _ldap._tcp.6b4bba80-b763-474a-adef-bffb8efbbc8a.domains._msdcs
+        weight: 100
+        port: 389
+        target: alfa
+      - name: _kerberos._tcp.dc._msdcs
+        weight: 100
+        port: 88
+        target: alfa
+      - name: _kerberos._tcp.Default-First-Site-Name._sites.dc._msdcs
+        weight: 100
+        port: 88
+        target: alfa
+      - name: _ldap._tcp.dc._msdcs
+        weight: 100
+        port: 389
+        target: alfa
+      - name: _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs
+        weight: 100
+        port: 389
+        target: alfa
+      - name: _kerberos._tcp
+        weight: 100
+        port: 88
+        target: alfa
+      - name: _ldap._tcp.gc._msdcs
+        weight: 100
+        port: 3268
+        target: alfa
+      - name: _kerberos._tcp.Default-First-Site-Name._sites
+        weight: 100
+        port: 88
+        target: alfa
+      - name: _gc._tcp
+        weight: 100
+        port: 3268
+        target: alfa
+      - name: _gc._tcp.Default-First-Site-Name._sites
+        weight: 100
+        port: 3268
+        target: alfa
+      - name: _kerberos._udp
+        weight: 100
+        port: 88
+        target: alfa
+      - name: _kpasswd._tcp
+        weight: 100
+        port: 464
+        target: alfa
+      - name: _kpasswd._udp
+        weight: 100
+        port: 464
+        target: alfa
+bind_forwarders:
+  - '8.8.8.8'
+  - '8.8.4.4'
+bind_recursion: true
+
+rhbase_firewall_allow_services:
+  - dns

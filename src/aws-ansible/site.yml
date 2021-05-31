@@ -1,0 +1,228 @@
+# site.yml
+# dit kan allemaal enkel in een linux omgeving gemaakt worden met ansible instalatie (misschien ook een mac)
+---
+- hosts: localhost
+  vars:
+    #owen vars
+    aws_access_key: AKIAJJH4TRBB7TJMGBOQ
+    aws_secret_key: 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
+    key_name: awdtest
+    group: CORONA2020
+    vpc_subnet_id: subnet-00302bce90c97dd61
+    #jochen keys
+    # aws_access_key: AKIAIHGSA4GHRVEZ4JPQ
+    # aws_secret_key: 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
+    # key_name: testkey
+    # group: testgroup
+    # vpc_subnet_id: subnet-04a4d350660b7c28e
+  tasks:
+    - name: install boto
+      pip: 
+        name: 
+          - boto3
+          - boto
+        state: latest
+
+
+# Deze code werkt perfect, maar aangezien we deze (sub)VPC slechts 1 malig moeten aanmaken doen we dit met de GUI van AWS
+# # Een vpc aanmaken
+#     - name: create a VPC
+#       amazon.aws.ec2_vpc_net:
+#         aws_access_key: "{{ aws_access_key }}"
+#         aws_secret_key: "{{ aws_secret_key }}"
+#         key_name: "{{ key_name }}"
+#         cidr_block: 192.168.10.0/24
+#         region: eu-west-2
+#       register: vpc
+# # VPC subnets een id geven
+#     - name: vpc id
+#       set_fact: 
+#         vpc_id: "{{ item.id }}"
+#       loop: "{{ vpc.instances }}"
+
+
+#Instance DNS aanmaken
+    - name: Provision DNS instance
+      ec2:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        key_name: "{{ key_name }}"
+        instance_type: t2.micro
+        image: ami-0fc841be1f929d7d1
+        wait: true
+        exact_count: 1
+        count_tag:
+          Name: bravo
+        instance_tags:
+          Name: bravo
+        region: eu-west-2
+        group: "{{ group }}"
+        vpc_subnet_id: "{{ vpc_subnet_id }}"
+        private_ip: 192.168.10.195
+        assign_public_ip: yes
+      register: DNS_CORONA2020
+#Instance DNS in een groep steken om te kunnen provisionen
+    - name: De DNS instance public IP to host group
+      add_host: 
+        hostname="{{ item.public_ip }}" groups=dns
+      loop: "{{DNS_CORONA2020.instances}}"
+#Wachten tot er een ssh verbinding gemaakt kan worden met de DNS instance
+    - name: Wait for ssh
+      delegate_to: "{{ item.public_ip }}"
+      remote_user: ec2-user
+      wait_for_connection:
+        delay: 30
+        timeout: 120
+      loop: "{{DNS_CORONA2020.instances}}"
+
+#Instance MAIl aanmaken
+    - name: Provision MAIL instance
+      ec2:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        key_name: "{{ key_name }}"
+        instance_type: t2.micro
+        image: ami-0fc841be1f929d7d1
+        wait: true
+        exact_count: 1
+        count_tag:
+          Name: delta
+        instance_tags:
+          Name: delta
+        region: eu-west-2
+        group: "{{ group }}"
+        vpc_subnet_id: "{{ vpc_subnet_id }}"
+        private_ip: 192.168.10.197
+        assign_public_ip: yes
+      register: MAIL_CORONA2020
+#Instance MAIL in een groep steken om te kunnen provisionen
+    - name: De MAIL instance public IP to host group
+      add_host: 
+        hostname="{{ item.public_ip }}" groups=mail
+      loop: "{{ MAIL_CORONA2020.instances }}"
+#Wachten tot er een ssh verbinding gemaakt kan worden met de MAIL instance
+    - name: Wait for ssh mail
+      delegate_to: "{{ item.public_ip }}"
+      become: true
+      remote_user: ec2-user
+      wait_for_connection:
+        delay: 30
+        timeout: 120
+      loop: "{{ MAIL_CORONA2020.instances }}"
+
+#Instance WEB aanmaken
+    - name: Provision WEB instance
+      ec2:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        key_name: "{{ key_name }}"
+        instance_type: t2.micro
+        image: ami-0fc841be1f929d7d1
+        wait: true
+        exact_count: 1
+        count_tag:
+          Name: charlie
+        instance_tags:
+          Name: charlie
+        region: eu-west-2
+        group: "{{ group }}"
+        vpc_subnet_id: "{{ vpc_subnet_id }}"
+        private_ip: 192.168.10.196
+        assign_public_ip: yes
+      register: WEB_CORONA2020
+#Instance WEB aan een groep toevoegen om te kunnen provisionen
+    - name: De WEB instance public IP to host group
+      add_host: 
+        hostname="{{ item.public_ip }}" groups=web
+      loop: "{{ WEB_CORONA2020.instances }}"
+#Wachten tot er een ssh verbinding gemaakt kan worden met de WEB instance
+    - name: Wait for ssh web
+      delegate_to: "{{ item.public_ip }}"
+      become: true
+      remote_user: ec2-user
+      wait_for_connection:
+        delay: 30
+        timeout: 120
+      loop: "{{ WEB_CORONA2020.instances }}"
+
+#De rol rhbase aan alle instances geven
+- hosts: all
+  name: add rhbase role
+  become: true
+  gather_facts: true
+  remote_user: ec2-user
+  roles:
+    - bertvv.rh-base
+
+#De BIND-rol provisionen op de dns-server
+- hosts: dns
+  name: Add bind role
+  gather_facts: yes
+  remote_user: ec2-user
+  roles:
+    - bertvv.bind
+
+#De MAIL-rol provisionen op de mail-server  
+- hosts: mail
+  name: add mail role
+  become: true
+  gather_facts: yes
+  remote_user: ec2-user
+  roles: 
+    - mailserver
+
+#De WEB-rollen provisionen op de web-server
+- hosts: web
+  name: addroles
+  become: true
+  gather_facts: yes
+  remote_user: ec2-user
+  pre_tasks:
+    - name: copy ssl key
+      copy:
+        src: "{{ssl_key}}"
+        dest: "/etc/pki/tls/certs/{{ssl_key}}"
+        
+    - name: copy ssl cert
+      copy: 
+        src: "{{ssl_cert}}"
+        dest: "/etc/pki/tls/certs/{{ssl_cert}}"
+  roles:
+    - geerlingguy.repo-epel
+    - geerlingguy.repo-remi
+    - geerlingguy.git 
+    - geerlingguy.postfix 
+    - geerlingguy.nginx
+    - geerlingguy.php-versions
+    - geerlingguy.php
+    - geerlingguy.php-pecl
+    - geerlingguy.composer 
+    - geerlingguy.postgresql
+    - geerlingguy.php-pgsql
+    - geerlingguy.drush
+    - geerlingguy.drupal
+    - centos_rainloop
+    
+  post_tasks:
+    - name: Change file ownership, group and permissions
+      file:
+        path: "{{drupal_composer_install_dir}}"
+        state: directory
+        recurse: yes
+        owner: nginx
+        group: nginx
+    - name: Update SeLinux premisions on drupal
+      command: "sudo chcon -t httpd_sys_content_rw_t {{drupal_composer_install_dir}}"
+      #when: rhbase_selinux_state == 'enforcing' or rhbase_selinux_state == 'permissive'
+    - name: Update SeLinux premisions on drupal default
+      command: "sudo chcon -t httpd_sys_content_rw_t {{drupal_composer_install_dir}}/web/sites/default/"
+      #when: rhbase_selinux_state == 'enforcing' or rhbase_selinux_state == 'permissive'
+    - name: Update SeLinux premisions on drupal files
+      command: "sudo chcon -t httpd_sys_content_rw_t {{drupal_composer_install_dir}}/web/sites/default/files/"
+      #when: rhbase_selinux_state == 'enforcing' or rhbase_selinux_state == 'permissive'
+    - name: Update SeLinux premisions on drupal settings.php
+      command: "sudo chcon -t httpd_sys_content_rw_t {{drupal_composer_install_dir}}/web/sites/default/settings.php"
+      #when: rhbase_selinux_state == 'enforcing' or rhbase_selinux_state == 'permissive'
+    - name: drupal reset cache
+      command: "{{ drush_path }} cr"
+      #when: rhbase_selinux_state == 'enforcing' or rhbase_selinux_state == 'permissive'

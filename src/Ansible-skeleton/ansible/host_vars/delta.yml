@@ -1,0 +1,17 @@
+postfix_myhostname: 'mail.CORONA2020.local'
+postfix_mydomain: 'CORONA2020.local'
+postfix_home_mailbox: 'MailDir/'
+postfix_myorigin: $postfix_mydomain
+postfix_inet_interfaces: 'all'
+postfix_mydestination: $postfix_myhostname,'localhost',$postfix_mydomain
+postfix_mynetwork: 192.168.10.0/24
+clamav_packages:
+  - clamav-server
+  - clamav-data
+  - clamav-update
+  - clamav-filesystem
+  - clamav
+  - clamav-scanner-systemd
+  - clamav-devel
+  - clamav-lib
+  - clamav-server-systemd

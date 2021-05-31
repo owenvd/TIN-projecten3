@@ -1,0 +1,7 @@
+- name: uninstall Sendmail
+  yum:
+    name: sendmail
+    state: removed
+  tags:
+    - mailserver
+    - sendmail

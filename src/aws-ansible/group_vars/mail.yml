@@ -1,0 +1,41 @@
+# roles/mailserver/vars/RedHat.yml
+#
+# Distribution-specific variables for RHEL, CentOS, ...
+---
+
+mailserver_sendmail_packages:
+  - sendmail
+mailserver_postfix_packages:
+  - postfix
+mailserver_postfix_service:
+  - postfix
+mailserver_dovecot_packages:
+  - dovecot
+mailserver_dovecot_service:
+  - dovecot
+postfix_config_dir:
+  - /etc/postfix
+dovecot_config_dir:
+  - /etc/dovecot/conf.d
+spamassassin_packages:
+  - spamassassin
+clamav_packages:
+  - clamav
+  - clamav-update
+  - clamav-scanner-systemd
+  - clamav-server-systemd
+  - clamav-server
+  - clamav-data
+  - clamav-filesystem
+  - clamav-devel
+  - clamav-lib
+  - freshclam
+
+# roles/mailserver/defaults/main.yml
+
+postfix_myhostname: 'test.test.test'
+postfix_mydomain: 'test.test'
+postfix_home_mailbox: 'mail/'
+postfix_mynetwork: 192.168.10.0/24
+postfix_ldap: false
+

@@ -1,0 +1,6 @@
+﻿Name,GivenName,Surname,SamAccountName,UserPrincipalName,Path
+"Test1 Gebruiker1",Test1,Gebruiker1,tgebruiker1,tgebruiker1@corona2020.local,"OU=IT-Administratie,DC=CORONA2020,DC=local"
+"Test2 Gebruiker2",Test2,Gebruiker2,tgebruiker2,tgebruiker2@corona2020.local,"OU=Verkoop,DC=CORONA2020,DC=local"
+"Test3 Gebruiker3",Test3,Gebruiker3,tgebruiker3,tgebruiker3@corona2020.local,"OU=Administratie,DC=CORONA2020,DC=local"
+"Test4 Gebruiker4",Test4,Gebruiker4,tgebruiker4,tgebruiker4@corona2020.local,"OU=Ontwikkeling,DC=CORONA2020,DC=local"
+"Test5 Gebruiker5",Test5,Gebruiker5,tgebruiker5,tgebruiker5@corona2020.local,"OU=Directie,DC=CORONA2020,DC=local"

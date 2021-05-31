@@ -1,0 +1,80 @@
+  # site.yml
+---
+- hosts: all
+  become: true
+  roles:
+    - bertvv.rh-base
+
+- hosts: bravo
+  become: true
+  roles:
+    - bertvv.bind
+
+- hosts: charlie
+  pre_tasks:
+    - name: copy ssl key
+      copy:
+        src: "{{ssl_key}}"
+        dest: "/etc/pki/tls/certs/{{ssl_key}}"
+        
+    - name: copy ssl cert
+      copy: 
+        src: "{{ssl_cert}}"
+        dest: "/etc/pki/tls/certs/{{ssl_cert}}"
+  
+  roles:
+    - geerlingguy.repo-epel
+    - geerlingguy.repo-remi
+    - geerlingguy.git 
+    - geerlingguy.postfix 
+    - geerlingguy.nginx
+    - geerlingguy.php-versions
+    - geerlingguy.php
+    - geerlingguy.php-pecl
+    - geerlingguy.composer 
+    - geerlingguy.postgresql
+    - geerlingguy.php-pgsql
+    - geerlingguy.drush
+    - geerlingguy.drupal
+    - geerlingguy.daemonize
+    - geerlingguy.mailhog
+    - centos_rainloop
+    - zabbix_server
+    - zabbix_web
+  post_tasks:
+    - name: Change file ownership, group and permissions Drupal
+      file:
+        path: "{{drupal_composer_install_dir}}"
+        state: directory
+        recurse: yes
+        owner: nginx
+        group: nginx
+    - name: Change file ownership, group and permissions php
+      file:
+        path: "/var/lib/php/session/"
+        state: directory
+        recurse: yes
+        owner: nginx
+        group: nginx
+    - name: Update SeLinux premisions on drupal
+      command: "sudo chcon -t httpd_sys_content_rw_t {{drupal_composer_install_dir}}"
+      #when: rhbase_selinux_state == 'enforcing' or rhbase_selinux_state == 'permissive'
+    - name: Update SeLinux premisions on drupal default
+      command: "sudo chcon -t httpd_sys_content_rw_t {{drupal_composer_install_dir}}/web/sites/default/"
+      #when: rhbase_selinux_state == 'enforcing' or rhbase_selinux_state == 'permissive'
+    - name: Update SeLinux premisions on drupal files
+      command: "sudo chcon -t httpd_sys_content_rw_t {{drupal_composer_install_dir}}/web/sites/default/files/"
+      #when: rhbase_selinux_state == 'enforcing' or rhbase_selinux_state == 'permissive'
+    - name: Update SeLinux premisions on drupal settings.php
+      command: "sudo chcon -t httpd_sys_content_rw_t {{drupal_composer_install_dir}}/web/sites/default/settings.php"
+      #when: rhbase_selinux_state == 'enforcing' or rhbase_selinux_state == 'permissive'
+    - name: drupal reset cache
+      command: "{{ drush_path }} cr"
+      #when: rhbase_selinux_state == 'enforcing' or rhbase_selinux_state == 'permissive'
+  vars_files:
+    - host_vars/charlie.yml
+
+- hosts: delta
+  become: true
+  roles:
+    - mailserver

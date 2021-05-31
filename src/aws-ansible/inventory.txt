@@ -1,0 +1,13 @@
+localhost ansible_connection=local
+[dns]
+[dns:vars]
+ansible_ssh_private_key_file=testkey.pem
+ansible_ssh_private_key_file=awstest.pem
+[mail]
+[mail:vars]
+ansible_ssh_private_key_file=testkey.pem
+ansible_ssh_private_key_file=awstest.pem
+[web]
+[web:vars]
+ansible_ssh_private_key_file=testkey.pem
+ansible_ssh_private_key_file=awstest.pem

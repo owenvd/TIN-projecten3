@@ -1,0 +1,13 @@
+# roles/mailserver/defaults/main.yml
+---
+postfix_myhostname: 'mail.CORONA2020.local'
+postfix_mydomain: 'CORONA2020.local'
+postfix_home_mailbox: 'mail/'
+postfix_mynetwork: 192.168.10.0/24
+postfix_ldap: true
+ldap_fqdn1: alfa.CORONA2020.local
+ldap_dcname: alfa
+ldap_domainname: CORONA2020
+ldap_root_domain: local
+ldap_ou: 
+  
